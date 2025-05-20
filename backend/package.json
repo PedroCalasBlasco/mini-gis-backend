@@ -1,0 +1,32 @@
+{
+  "name": "project-node-jwt-postgresql",
+  "version": "1.0.0",
+  "description": "Node project with postgresql BBDD and jwt",
+  "main": "src/app.js",
+  "scripts": {
+    "dev": "tsnd --respawn --clear src/server.ts",
+    "start": "node dist/server.js",
+    "build": "rimraf ./dist && tsc"
+  },
+  "author": "Pedro Calás Blasco",
+  "license": "ISC",
+  "devDependencies": {
+    "@prisma/client": "^6.6.0",
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^22.14.1",
+    "prisma": "^6.6.0",
+    "rimraf": "^6.0.1",
+    "ts-node-dev": "^2.0.0"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "typescript": "^5.8.3"
+  }
+}

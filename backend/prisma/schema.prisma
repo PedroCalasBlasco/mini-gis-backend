@@ -1,0 +1,52 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  password  String
+  firstName String?
+  lastName String?
+  phone String?
+  color String?
+  maps      Map[]   @relation("UserMaps")
+  layers    Layer[] @relation("UserLayers")
+}
+
+
+model Map {
+  id     Int     @id @default(autoincrement())
+  name   String
+  users  User[]  @relation("UserMaps")
+  layers Layer[]
+  @@map("Map")       // nombre real en la base de datos
+}
+
+model Layer {
+  id     Int     @id @default(autoincrement())
+  name   String
+  mapId  Int
+  map    Map     @relation(fields: [mapId], references: [id])
+  users    User[]   @relation("UserLayers")
+  features Feature[]
+  @@map("Layer")
+}
+
+model Feature {
+  id        Int     @id @default(autoincrement())
+  name      String?
+  type      String
+  geometry  Unsupported("geometry")
+  layerId   Int
+  layer     Layer    @relation(fields: [layerId], references: [id])
+  @@map("Feature")
+}
