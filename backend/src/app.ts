@@ -2,6 +2,7 @@ import dotenv from "dotenv"
 import express  from "express"
 import authRouter from "./routes/authRoutes"
 import usersRouter from "./routes/usersRoutes"
+import mapsRoutes from "./routes/mapsRoutes"
 import cors from 'cors'
 
 dotenv.config()
@@ -18,6 +19,7 @@ app.use(express.json())
 //Routes
 app.use('/auth', authRouter)
 app.use('/users', usersRouter)
+app.use('/maps', mapsRoutes)
 
 
 export default app

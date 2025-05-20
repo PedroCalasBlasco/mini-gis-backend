@@ -11,24 +11,78 @@ datasource db {
 
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
   password  String
   firstName String?
-  lastName String?
-  phone String?
-  color String?
-  maps      Map[]   @relation("UserMaps")
-  layers    Layer[] @relation("UserLayers")
+  lastName  String?
+  phone     String?
+  color     String?
+
+  maps   MapUser[]
+  layers Layer[] @relation("UserLayers")
 }
 
 
 model Map {
-  id     Int     @id @default(autoincrement())
-  name   String
-  users  User[]  @relation("UserMaps")
-  layers Layer[]
-  @@map("Map")       // nombre real en la base de datos
+  id          Int           @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  isPublic    Boolean       @default(false)
+
+  centerLat   Float?
+  centerLng   Float?
+  zoom        Int?
+  bbox        Json?
+  baseMapId   Int?
+  baseMap     BaseMap?      @relation(fields: [baseMapId], references: [id])
+
+  users   MapUser[]
+  layers  Layer[]
+  widgets MapWidget[]
+
+  @@map("Map")
+}
+
+model BaseMap {
+  id   Int    @id @default(autoincrement())
+  name String
+  url  String
+
+  maps Map[]
+}
+
+model MapUser {
+  userId Int
+  mapId  Int
+  role   String?
+
+  user User @relation(fields: [userId], references: [id])
+  map  Map  @relation(fields: [mapId], references: [id])
+
+  @@id([userId, mapId])
+}
+
+
+model Widget {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  type        String?
+  config      Json?
+  maps        MapWidget[]
+}
+
+model MapWidget {
+  mapId    Int
+  widgetId Int
+
+  map     Map    @relation(fields: [mapId], references: [id])
+  widget  Widget @relation(fields: [widgetId], references: [id])
+
+  @@id([mapId, widgetId])
 }
 
 model Layer {
@@ -45,8 +99,8 @@ model Feature {
   id        Int     @id @default(autoincrement())
   name      String?
   type      String
-  geometry  Unsupported("geometry")
   layerId   Int
+  geometry  Unsupported("geometry")
   layer     Layer    @relation(fields: [layerId], references: [id])
   @@map("Feature")
 }
