@@ -50,6 +50,7 @@ model BaseMap {
   id   Int    @id @default(autoincrement())
   name String
   url  String
+  thumbnailUrl String? 
 
   maps Map[]
 }
@@ -88,10 +89,26 @@ model MapWidget {
 model Layer {
   id     Int     @id @default(autoincrement())
   name   String
-  mapId  Int
-  map    Map     @relation(fields: [mapId], references: [id])
+  description  String? 
+  mapId  Int?
+  map    Map?     @relation(fields: [mapId], references: [id])
   users    User[]   @relation("UserLayers")
   features Feature[]
+
+  type        String
+  sourceUrl   String?
+  ownerId     Int?
+  isPublic    Boolean
+  featureSchema Json?
+  metadata     Json?
+  crs          String     // sistema de referencia (por ejemplo, EPSG:4326)
+  isVisible    Boolean     @default(true) // si el layer está visible por defecto
+  opacity      Float       @default(1.0)  // opacidad del layer (0.0 a 1.0)
+  style        Json?       // estilo del layer (puede ser un objeto JSON)
+  layerType    String?     // tipo del layer: 'vector', 'raster', 'tile', etc.
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
   @@map("Layer")
 }
 

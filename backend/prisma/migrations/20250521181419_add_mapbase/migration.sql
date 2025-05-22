@@ -33,6 +33,7 @@ CREATE TABLE "BaseMap" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "url" TEXT NOT NULL,
+    "thumbnailUrl" TEXT,
 
     CONSTRAINT "BaseMap_pkey" PRIMARY KEY ("id")
 );
@@ -69,7 +70,7 @@ CREATE TABLE "MapWidget" (
 CREATE TABLE "Layer" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "mapId" INTEGER NOT NULL,
+    "mapId" INTEGER,
 
     CONSTRAINT "Layer_pkey" PRIMARY KEY ("id")
 );
@@ -80,6 +81,7 @@ CREATE TABLE "Feature" (
     "name" TEXT,
     "type" TEXT NOT NULL,
     "layerId" INTEGER NOT NULL,
+    "geometry" geometry NOT NULL,
 
     CONSTRAINT "Feature_pkey" PRIMARY KEY ("id")
 );
@@ -114,7 +116,7 @@ ALTER TABLE "MapWidget" ADD CONSTRAINT "MapWidget_mapId_fkey" FOREIGN KEY ("mapI
 ALTER TABLE "MapWidget" ADD CONSTRAINT "MapWidget_widgetId_fkey" FOREIGN KEY ("widgetId") REFERENCES "Widget"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Layer" ADD CONSTRAINT "Layer_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Layer" ADD CONSTRAINT "Layer_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Feature" ADD CONSTRAINT "Feature_layerId_fkey" FOREIGN KEY ("layerId") REFERENCES "Layer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
