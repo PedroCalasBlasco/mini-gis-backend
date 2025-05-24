@@ -1,6 +1,8 @@
 import { Request, Response } from "express"
 import { hashPassword } from "../services/password.service"
-import prisma from "../models/user"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 export const createUser = async(request: Request, response: Response): Promise<void> => {
 
@@ -28,7 +30,7 @@ export const createUser = async(request: Request, response: Response): Promise<v
             return
         } 
 
-        const user = await prisma.create( 
+        const user = await prisma.user.create( 
             {
                 data: {
                     email,
@@ -54,7 +56,7 @@ export const createUser = async(request: Request, response: Response): Promise<v
 
 export const getAllUsers = async(request: Request, response: Response): Promise<void> => { 
     try {
-        const users = await prisma.findMany()
+        const users = await prisma.user.findMany()
         response.status(200).json({users})
 
     } catch(error: any) {
@@ -67,7 +69,7 @@ export const getUserById = async(request: Request, response: Response): Promise<
     const userId = parseInt(request.params.id)
 
     try {
-        const user = await prisma.findUnique({
+        const user = await prisma.user.findUnique({
             where: {
                 id: userId
             },
@@ -115,7 +117,7 @@ export const updateUser = async(request: Request, response: Response): Promise<v
             dataToUpdate.email = email
         }
 
-        const user = await prisma.update({
+        const user = await prisma.user.update({
             where: {
                 id: userId
             },
@@ -144,7 +146,7 @@ export const deleteUser = async(request: Request, response: Response): Promise<v
 
     try {
 
-        await prisma.delete({
+        await prisma.user.delete({
             where: {
                 id: userId
             }

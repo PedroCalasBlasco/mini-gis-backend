@@ -1,7 +1,10 @@
 import { Request, Response } from "express"
 import { comparePasswords, hashPassword } from "../services/password.service"
-import prisma from "../models/user"
 import { generateToken } from "../services/auth.service"
+
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 export const register = async(request: Request, response: Response): Promise<void> => {
     const { email, password, firstName, lastName, phone, color} = request.body
@@ -20,7 +23,7 @@ export const register = async(request: Request, response: Response): Promise<voi
         
         const hashedPassword = await hashPassword(password)
     
-        const user = await prisma.create(
+        const user = await prisma.user.create(
             {
                 data: {
                     email,
@@ -63,7 +66,7 @@ export const login = async(request: Request, response: Response): Promise<void> 
             return
         } 
 
-        const user = await prisma.findUnique({ where: {email}})
+        const user = await prisma.user.findUnique({ where: {email}})
 
         if(!user){
             response.status(404).json({ error: 'User and password do not match'})
