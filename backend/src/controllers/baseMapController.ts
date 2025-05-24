@@ -1,10 +1,12 @@
 import { Request, Response } from 'express'
-import prisma from "../models/baseMap"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 // GET /basemaps
 export const getAllBaseMaps = async (req: Request, res: Response) => {
   try {
-    const baseMaps = await prisma.findMany({
+    const baseMaps = await prisma.baseMap.findMany({
       select: {
         id: true,
         name: true,

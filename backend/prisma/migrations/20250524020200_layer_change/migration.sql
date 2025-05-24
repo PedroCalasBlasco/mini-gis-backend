@@ -70,9 +70,30 @@ CREATE TABLE "MapWidget" (
 CREATE TABLE "Layer" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "mapId" INTEGER,
+    "description" TEXT,
+    "type" TEXT NOT NULL,
+    "sourceUrl" TEXT,
+    "ownerId" INTEGER,
+    "isPublic" BOOLEAN NOT NULL,
+    "featureSchema" JSONB,
+    "metadata" JSONB,
+    "crs" TEXT NOT NULL,
+    "isVisible" BOOLEAN NOT NULL DEFAULT true,
+    "opacity" DOUBLE PRECISION NOT NULL DEFAULT 1.0,
+    "style" JSONB,
+    "layerType" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Layer_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "MapLayer" (
+    "mapId" INTEGER NOT NULL,
+    "layerId" INTEGER NOT NULL,
+
+    CONSTRAINT "MapLayer_pkey" PRIMARY KEY ("mapId","layerId")
 );
 
 -- CreateTable
@@ -104,19 +125,22 @@ CREATE INDEX "_UserLayers_B_index" ON "_UserLayers"("B");
 ALTER TABLE "Map" ADD CONSTRAINT "Map_baseMapId_fkey" FOREIGN KEY ("baseMapId") REFERENCES "BaseMap"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "MapUser" ADD CONSTRAINT "MapUser_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MapUser" ADD CONSTRAINT "MapUser_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "MapUser" ADD CONSTRAINT "MapUser_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MapUser" ADD CONSTRAINT "MapUser_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "MapWidget" ADD CONSTRAINT "MapWidget_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MapWidget" ADD CONSTRAINT "MapWidget_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "MapWidget" ADD CONSTRAINT "MapWidget_widgetId_fkey" FOREIGN KEY ("widgetId") REFERENCES "Widget"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MapWidget" ADD CONSTRAINT "MapWidget_widgetId_fkey" FOREIGN KEY ("widgetId") REFERENCES "Widget"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Layer" ADD CONSTRAINT "Layer_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "MapLayer" ADD CONSTRAINT "MapLayer_mapId_fkey" FOREIGN KEY ("mapId") REFERENCES "Map"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "MapLayer" ADD CONSTRAINT "MapLayer_layerId_fkey" FOREIGN KEY ("layerId") REFERENCES "Layer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Feature" ADD CONSTRAINT "Feature_layerId_fkey" FOREIGN KEY ("layerId") REFERENCES "Layer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

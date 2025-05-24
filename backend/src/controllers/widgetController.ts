@@ -1,9 +1,11 @@
 import { Request, Response } from 'express'
-import prisma from "../models/widget"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 export const getAllWidgets = async (req: Request, res: Response): Promise<void> => {
   try {
-    const widgets = await prisma.findMany()
+    const widgets = await prisma.widget.findMany()
 
     res.status(200).json(widgets)
   } catch (error) {

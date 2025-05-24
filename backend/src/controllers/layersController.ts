@@ -1,5 +1,8 @@
 import { Request, Response } from 'express'
-import prisma from "../models/layer"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
+
 
 export const getLayersByUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -10,7 +13,7 @@ export const getLayersByUser = async (req: Request, res: Response): Promise<void
       return
     }
 
-    const layers = await prisma.findMany({
+    const layers = await prisma.layer.findMany({
       where: {
         users: {
           some: {
@@ -20,7 +23,11 @@ export const getLayersByUser = async (req: Request, res: Response): Promise<void
       },
       include: {
         features: true,
-        map: true
+        mapLayers: {
+            include: {
+              layer: true
+            }
+        }
       }
     })
 

@@ -1,18 +1,16 @@
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
   shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
-
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
   password  String
   firstName String?
   lastName  String?
@@ -20,37 +18,36 @@ model User {
   color     String?
 
   maps   MapUser[]
-  layers Layer[] @relation("UserLayers")
+  layers Layer[]   @relation("UserLayers")
 }
 
-
 model Map {
-  id          Int           @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   description String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  isPublic    Boolean       @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isPublic    Boolean  @default(false)
 
-  centerLat   Float?
-  centerLng   Float?
-  zoom        Int?
-  bbox        Json?
-  baseMapId   Int?
-  baseMap     BaseMap?      @relation(fields: [baseMapId], references: [id])
+  centerLat Float?
+  centerLng Float?
+  zoom      Int?
+  bbox      Json?
+  baseMapId Int?
+  baseMap   BaseMap? @relation(fields: [baseMapId], references: [id])
 
-  users   MapUser[]
-  layers  Layer[]
-  widgets MapWidget[]
+  users     MapUser[]
+  mapLayers MapLayer[]
+  widgets   MapWidget[]
 
   @@map("Map")
 }
 
 model BaseMap {
-  id   Int    @id @default(autoincrement())
-  name String
-  url  String
-  thumbnailUrl String? 
+  id           Int     @id @default(autoincrement())
+  name         String
+  url          String
+  thumbnailUrl String?
 
   maps Map[]
 }
@@ -60,15 +57,14 @@ model MapUser {
   mapId  Int
   role   String?
 
-  user User @relation(fields: [userId], references: [id])
-  map  Map  @relation(fields: [mapId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  map  Map  @relation(fields: [mapId], references: [id], onDelete: Cascade)
 
   @@id([userId, mapId])
 }
 
-
 model Widget {
-  id          Int       @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   description String?
   type        String?
@@ -80,44 +76,55 @@ model MapWidget {
   mapId    Int
   widgetId Int
 
-  map     Map    @relation(fields: [mapId], references: [id])
-  widget  Widget @relation(fields: [widgetId], references: [id])
+  map    Map    @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  widget Widget @relation(fields: [widgetId], references: [id], onDelete: Cascade)
 
   @@id([mapId, widgetId])
 }
 
 model Layer {
-  id     Int     @id @default(autoincrement())
-  name   String
-  description  String? 
-  mapId  Int?
-  map    Map?     @relation(fields: [mapId], references: [id])
-  users    User[]   @relation("UserLayers")
-  features Feature[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  users       User[]    @relation("UserLayers")
+  features    Feature[]
 
-  type        String
-  sourceUrl   String?
-  ownerId     Int?
-  isPublic    Boolean
+  type          String
+  sourceUrl     String?
+  ownerId       Int?
+  isPublic      Boolean
   featureSchema Json?
-  metadata     Json?
-  crs          String     // sistema de referencia (por ejemplo, EPSG:4326)
-  isVisible    Boolean     @default(true) // si el layer está visible por defecto
-  opacity      Float       @default(1.0)  // opacidad del layer (0.0 a 1.0)
-  style        Json?       // estilo del layer (puede ser un objeto JSON)
-  layerType    String?     // tipo del layer: 'vector', 'raster', 'tile', etc.
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  metadata      Json?
+  crs           String // sistema de referencia (por ejemplo, EPSG:4326)
+  isVisible     Boolean  @default(true) // si el layer está visible por defecto
+  opacity       Float    @default(1.0) // opacidad del layer (0.0 a 1.0)
+  style         Json? // estilo del layer (puede ser un objeto JSON)
+  layerType     String? // tipo del layer: 'vector', 'raster', 'tile', etc.
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  mapLayers MapLayer[]
 
   @@map("Layer")
 }
 
+model MapLayer {
+  mapId   Int
+  layerId Int
+
+  map   Map   @relation(fields: [mapId], references: [id], onDelete: Cascade)
+  layer Layer @relation(fields: [layerId], references: [id])
+
+  @@id([mapId, layerId])
+}
+
 model Feature {
-  id        Int     @id @default(autoincrement())
-  name      String?
-  type      String
-  layerId   Int
-  geometry  Unsupported("geometry")
-  layer     Layer    @relation(fields: [layerId], references: [id])
+  id       Int                     @id @default(autoincrement())
+  name     String?
+  type     String
+  layerId  Int
+  geometry Unsupported("geometry")
+  layer    Layer                   @relation(fields: [layerId], references: [id])
+
   @@map("Feature")
 }

@@ -1,6 +1,8 @@
 import { Request, Response } from "express"
-import prisma from "../models/map"
 
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 
 export const getMapsByUser = async (req: Request, res: Response): Promise<void> => {
@@ -12,16 +14,21 @@ export const getMapsByUser = async (req: Request, res: Response): Promise<void> 
       return
     }
 
-    const maps = await prisma.findMany({
+    const maps = await prisma.map.findMany({
       where: {
         users: {
           some: {
             userId: userId
           }
         }
+        
       },
       include: {
-        layers: true,
+        mapLayers: {
+          include: {
+            layer: true
+          }
+        },
         widgets: {
           include: {
             widget: true
@@ -38,86 +45,175 @@ export const getMapsByUser = async (req: Request, res: Response): Promise<void> 
   }
 }
 
-
 export const createMap = async (request: Request, response: Response): Promise<void> => {
-    try {
-      const {
+  try {
+    const {
+      name,
+      description,
+      centerLat,
+      centerLng,
+      zoom,
+      bbox,
+      baseMapId,
+      isPublic = false,
+      userId,
+      role = 'owner',
+      layers = [],
+      widgets = []
+    } = request.body
+
+    if (!name) {
+      response.status(400).json({ error: 'Name is required' })
+      return
+    }
+
+    if (!userId) {
+      response.status(400).json({ error: 'userId is required' })
+      return
+    }
+
+    const newMap = await prisma.map.create({
+      data: {
         name,
         description,
         centerLat,
         centerLng,
         zoom,
         bbox,
-        baseMapId,
-        isPublic = false,
-        userId,
-        role = 'owner',
-        layers = [],
-        widgets = []
-      } = request.body
-  
-      if (!name) {
-        response.status(400).json({ error: 'Name is required' })
-        return 
-      }
-
-      if (!userId) {
-        response.status(400).json({ error: 'userId is required' })
-        return
-      }
-
-  
-      const newMap = await prisma.create({
-        data: {
-          name,
-          description,
-          centerLat,
-          centerLng,
-          zoom,
-          bbox,
-          isPublic,
-          baseMap: baseMapId ? { connect: { id: baseMapId } } : undefined,
-  
-          // Relación obligatoria con el usuario creador
-          users: {
-            create: {
-              user: { connect: { id: userId } },
-              role,
-            },
-          },
-  
-          // Capas opcionales
-          layers: {
-            create: layers.map((layer: { name: string }) => ({
-              name: layer.name,
-              users: {
-                connect: { id: userId }, // el creador es dueño también de las capas
-              },
-            })),
-          },
-  
-          // Widgets opcionales
-          widgets: {
-            create: widgets.map((widget: { widgetId: number }) => ({
-              widget: { connect: { id: widget.widgetId } },
-            })),
-          },
+        isPublic,
+        baseMap: baseMapId ? { connect: { id: baseMapId } } : undefined,
+        users: {
+          create: {
+            user: { connect: { id: userId } },
+            role,
+          }
         },
-        include: {
-          users: true,
-          layers: true,
-          widgets: {
-            include: {
-              widget: true,
-            },
-          },
-          baseMap: true,
+        mapLayers: {
+          create: layers.map((layer: { id: number }) => ({
+            layer: { connect: { id: layer.id } }
+          }))
         },
-      })
-  
-      response.status(201).json(newMap)
-    } catch (error) {
-      console.error('❌ Error creating map:', error)
-      response.status(500).json({ error: 'Failed to create map' })
-    }
+        widgets: {
+          create: widgets.map((widget: { id: number }) => ({
+            widget: { connect: { id: widget.id } }
+          }))
+        }
+      },
+      include: {
+        users: true,
+        mapLayers: {
+          include: {
+            layer: true
+          }
+        },
+        widgets: {
+          include: {
+            widget: true
+          }
+        },
+        baseMap: true
+      }
+    })
+
+    response.status(201).json(newMap)
+  } catch (error) {
+    console.error('❌ Error creating map:', error)
+    response.status(500).json({ error: 'Failed to create map' })
   }
+}
+
+
+export const deleteMap = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = parseInt(req.params.id)
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid map id" })
+      return
+    }
+
+    const existingMap = await prisma.map.findUnique({ where: { id } })
+    if (!existingMap) {
+      res.status(404).json({ error: "Map not found" })
+      return
+    }
+
+    await prisma.map.delete({ where: { id } })
+    res.status(204).send()
+  } catch (error) {
+    console.error("❌ Error deleting map:", error)
+    res.status(500).json({ error: "Failed to delete map" })
+  }
+}
+
+
+export const updateMap = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const id = parseInt(req.params.id)
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid map id" })
+      return
+    }
+
+    const {
+      name,
+      description,
+      centerLat,
+      centerLng,
+      zoom,
+      bbox,
+      baseMapId,
+      isPublic,
+      layers = [],
+      widgets = []
+    } = req.body
+
+    const existingMap = await prisma.map.findUnique({ where: { id } })
+    if (!existingMap) {
+      res.status(404).json({ error: "Map not found" })
+      return
+    }
+
+    const updatedMap = await prisma.map.update({
+      where: { id },
+      data: {
+        name,
+        description,
+        centerLat,
+        centerLng,
+        zoom,
+        bbox,
+        isPublic,
+        baseMap: baseMapId ? { connect: { id: baseMapId } } : undefined,
+        mapLayers: {
+          create: layers.map((layer: { id: number }) => ({
+            layer: { connect: { id: layer.id } }
+          }))
+        },
+        widgets: {
+          create: widgets.map((widget: { id: number }) => ({
+            widget: { connect: { id: widget.id } }
+          }))
+        }
+      },
+      include: {
+        users: true,
+        mapLayers: {
+          include: {
+            layer: true
+          }
+        },
+        widgets: {
+          include: {
+            widget: true
+          }
+        },
+        baseMap: true
+      }
+    })
+
+    res.status(200).json(updatedMap)
+  } catch (error) {
+    console.error("❌ Error updating map:", error)
+    res.status(500).json({ error: "Failed to update map" })
+  }
+}
