@@ -45,6 +45,59 @@ export const getMapsByUser = async (req: Request, res: Response): Promise<void> 
   }
 }
 
+export const getMapByUserAndId = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = parseInt(req.query.userId as string)
+    const mapId = parseInt(req.params.id)
+
+    if (isNaN(userId) || isNaN(mapId)) {
+      res.status(400).json({ error: 'Invalid or missing userId or mapId' })
+      return
+    }
+
+    const map = await prisma.map.findFirst({
+      where: {
+        id: mapId,
+        users: {
+          some: {
+            userId: userId
+          }
+        }
+      },
+      include: {
+        users: true,
+        mapLayers: {
+          include: {
+            layer: true
+          }
+        },
+        widgets: {
+          include: {
+            widget: true
+          }
+        },
+        baseMap: true
+      }
+    })
+
+    if (!map) {
+      res.status(404).json({ error: 'Map not found for given user and id' })
+      return
+    }
+
+    // 👉 Aquí transformamos los widgets
+    const cleanMap = {
+      ...map,
+      widgets: map.widgets.map(w => w.widget)
+    }
+
+    res.status(200).json(cleanMap)
+  } catch (error) {
+    console.error('❌ Error fetching map by user and id:', error)
+    res.status(500).json({ error: 'Failed to fetch map' })
+  }
+}
+
 export const createMap = async (request: Request, response: Response): Promise<void> => {
   try {
     const {
@@ -173,6 +226,7 @@ export const updateMap = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
+    // Actualización principal con eliminación de relaciones previas
     const updatedMap = await prisma.map.update({
       where: { id },
       data: {
@@ -184,12 +238,16 @@ export const updateMap = async (req: Request, res: Response): Promise<void> => {
         bbox,
         isPublic,
         baseMap: baseMapId ? { connect: { id: baseMapId } } : undefined,
+
+        // Eliminar relaciones anteriores antes de crear nuevas
         mapLayers: {
+          deleteMany: {},
           create: layers.map((layer: { id: number }) => ({
             layer: { connect: { id: layer.id } }
           }))
         },
         widgets: {
+          deleteMany: {},
           create: widgets.map((widget: { id: number }) => ({
             widget: { connect: { id: widget.id } }
           }))
@@ -198,14 +256,10 @@ export const updateMap = async (req: Request, res: Response): Promise<void> => {
       include: {
         users: true,
         mapLayers: {
-          include: {
-            layer: true
-          }
+          include: { layer: true }
         },
         widgets: {
-          include: {
-            widget: true
-          }
+          include: { widget: true }
         },
         baseMap: true
       }
