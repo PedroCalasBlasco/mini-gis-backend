@@ -88,18 +88,17 @@ model Layer {
   description String?
   users       User[]    @relation("UserLayers")
   features    Feature[]
-
-  type          String
+  geometryType  String?
   sourceUrl     String?
-  ownerId       Int?
-  isPublic      Boolean
+  ownerId       Int
+  isPublic      Boolean @default(true) 
   featureSchema Json?
   metadata      Json?
-  crs           String // sistema de referencia (por ejemplo, EPSG:4326)
+  crs           Json // sistema de referencia (por ejemplo, EPSG:4326)
   isVisible     Boolean  @default(true) // si el layer está visible por defecto
   opacity       Float    @default(1.0) // opacidad del layer (0.0 a 1.0)
   style         Json? // estilo del layer (puede ser un objeto JSON)
-  layerType     String? // tipo del layer: 'vector', 'raster', 'tile', etc.
+  layerType     String // tipo del layer: 'vector', 'raster', 'tile', etc.
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

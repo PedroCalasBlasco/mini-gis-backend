@@ -7,6 +7,7 @@ import cors from 'cors'
 import basemMapsRouter from "./routes/baseMapRoutes"
 import layersRouter from "./routes/layersRoutes"
 import widgetsRouter from "./routes/widgetsRoutes"
+import crsRouter from "./routes/crsRoutes"
 
 dotenv.config()
 
@@ -26,6 +27,7 @@ app.use('/maps', mapsRoutes)
 app.use('/basemaps', basemMapsRouter)
 app.use('/layers', layersRouter)
 app.use('/widgets', widgetsRouter)
+app.use('/crs', crsRouter)
 
 
 export default app
