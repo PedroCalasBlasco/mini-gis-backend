@@ -8,6 +8,7 @@ import basemMapsRouter from "./routes/baseMapRoutes"
 import layersRouter from "./routes/layersRoutes"
 import widgetsRouter from "./routes/widgetsRoutes"
 import crsRouter from "./routes/crsRoutes"
+import featuresRouter from "./routes/featuresRoutes"
 
 dotenv.config()
 
@@ -28,6 +29,7 @@ app.use('/basemaps', basemMapsRouter)
 app.use('/layers', layersRouter)
 app.use('/widgets', widgetsRouter)
 app.use('/crs', crsRouter)
+app.use('/features', featuresRouter)
 
 
 export default app

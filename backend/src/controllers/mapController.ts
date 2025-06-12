@@ -1,58 +1,104 @@
-import { Request, Response } from "express"
+import { Request, Response } from "express";
 
-import { PrismaClient } from "@prisma/client"
+import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
-
-export const getMapsByUser = async (req: Request, res: Response): Promise<void> => {
+export const getMapsByUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const userId = parseInt(req.query.userId as string)
+    const userId = parseInt(req.query.userId as string);
 
     if (isNaN(userId)) {
-      res.status(400).json({ error: 'Invalid or missing userId in query parameters' })
-      return
+      res
+        .status(400)
+        .json({ error: "Invalid or missing userId in query parameters" });
+      return;
     }
 
     const maps = await prisma.map.findMany({
       where: {
-        users: {
-          some: {
-            userId: userId
-          }
-        }
-        
+        ownerId: userId,
       },
       include: {
         mapLayers: {
           include: {
-            layer: true
-          }
+            layer: true,
+          },
         },
         widgets: {
           include: {
-            widget: true
-          }
+            widget: true,
+          },
         },
-        baseMap: true
-      }
-    })
+        baseMap: true,
+      },
+    });
 
-    res.status(200).json(maps)
+    res.status(200).json(maps);
   } catch (error) {
-    console.error('❌ Error fetching maps:', error)
-    res.status(500).json({ error: 'Failed to fetch maps' })
+    console.error("❌ Error fetching maps:", error);
+    res.status(500).json({ error: "Failed to fetch maps" });
   }
-}
+};
 
-export const getMapByUserAndId = async (req: Request, res: Response): Promise<void> => {
+export const getMapsSharedWithUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const userId = parseInt(req.query.userId as string)
-    const mapId = parseInt(req.params.id)
+    const userId = parseInt(req.query.userId as string);
+
+    if (isNaN(userId)) {
+      res
+        .status(400)
+        .json({ error: "Invalid or missing userId in query parameters" });
+      return;
+    }
+
+    const maps = await prisma.map.findMany({
+      where: {
+        ownerId: { not: userId },
+        users: {
+          some: { userId },
+        },
+        isPublic: false, 
+      },
+      include: {
+        mapLayers: {
+          include: {
+            layer: true,
+          },
+        },
+        widgets: {
+          include: {
+            widget: true,
+          },
+        },
+        baseMap: true,
+      },
+    });
+
+    res.status(200).json(maps);
+  } catch (error) {
+    console.error("❌ Error fetching maps:", error);
+    res.status(500).json({ error: "Failed to fetch maps" });
+  }
+};
+
+export const getMapByUserAndId = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = parseInt(req.query.userId as string);
+    const mapId = parseInt(req.params.id);
 
     if (isNaN(userId) || isNaN(mapId)) {
-      res.status(400).json({ error: 'Invalid or missing userId or mapId' })
-      return
+      res.status(400).json({ error: "Invalid or missing userId or mapId" });
+      return;
     }
 
     const map = await prisma.map.findFirst({
@@ -60,45 +106,90 @@ export const getMapByUserAndId = async (req: Request, res: Response): Promise<vo
         id: mapId,
         users: {
           some: {
-            userId: userId
-          }
-        }
+            userId: userId,
+          },
+        },
       },
       include: {
         users: true,
         mapLayers: {
           include: {
-            layer: true
-          }
+            layer: true,
+          },
         },
         widgets: {
           include: {
-            widget: true
-          }
+            widget: true,
+          },
         },
-        baseMap: true
-      }
-    })
+        baseMap: true,
+      },
+    });
 
     if (!map) {
-      res.status(404).json({ error: 'Map not found for given user and id' })
-      return
+      res.status(404).json({ error: "Map not found for given user and id" });
+      return;
     }
 
     // 👉 Aquí transformamos los widgets
     const cleanMap = {
       ...map,
-      widgets: map.widgets.map(w => w.widget)
-    }
+      widgets: map.widgets.map((w) => w.widget),
+    };
 
-    res.status(200).json(cleanMap)
+    res.status(200).json(cleanMap);
   } catch (error) {
-    console.error('❌ Error fetching map by user and id:', error)
-    res.status(500).json({ error: 'Failed to fetch map' })
+    console.error("❌ Error fetching map by user and id:", error);
+    res.status(500).json({ error: "Failed to fetch map" });
   }
-}
+};
 
-export const createMap = async (request: Request, response: Response): Promise<void> => {
+export const getPublicMaps = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const userId = parseInt(req.query.userId as string);
+
+  if (isNaN(userId)) {
+    res
+      .status(400)
+      .json({ error: "Invalid or missing userId in query parameters" });
+    return;
+  }
+
+  try {
+    const maps = await prisma.map.findMany({
+      where: {
+        isPublic: true,
+        ownerId: { not: userId },
+      },
+      include: {
+        users: true,
+        mapLayers: {
+          include: {
+            layer: true,
+          },
+        },
+        widgets: {
+          include: {
+            widget: true,
+          },
+        },
+        baseMap: true,
+      },
+    });
+
+    res.status(200).json(maps);
+  } catch (error) {
+    console.error("❌ Error fetching public maps:", error);
+    res.status(500).json({ error: "Failed to fetch public maps" });
+  }
+};
+
+export const createMap = async (
+  request: Request,
+  response: Response
+): Promise<void> => {
   try {
     const {
       name,
@@ -110,19 +201,19 @@ export const createMap = async (request: Request, response: Response): Promise<v
       baseMapId,
       isPublic = false,
       userId,
-      role = 'owner',
+      role = "owner",
       layers = [],
-      widgets = []
-    } = request.body
+      widgets = [],
+    } = request.body;
 
     if (!name) {
-      response.status(400).json({ error: 'Name is required' })
-      return
+      response.status(400).json({ error: "Name is required" });
+      return;
     }
 
     if (!userId) {
-      response.status(400).json({ error: 'userId is required' })
-      return
+      response.status(400).json({ error: "userId is required" });
+      return;
     }
 
     const newMap = await prisma.map.create({
@@ -135,76 +226,75 @@ export const createMap = async (request: Request, response: Response): Promise<v
         bbox,
         isPublic,
         baseMap: baseMapId ? { connect: { id: baseMapId } } : undefined,
+        owner: { connect: { id: userId } },
         users: {
           create: {
             user: { connect: { id: userId } },
             role,
-          }
+          },
         },
         mapLayers: {
           create: layers.map((layer: { id: number }) => ({
-            layer: { connect: { id: layer.id } }
-          }))
+            layer: { connect: { id: layer.id } },
+          })),
         },
         widgets: {
           create: widgets.map((widget: { id: number }) => ({
-            widget: { connect: { id: widget.id } }
-          }))
-        }
+            widget: { connect: { id: widget.id } },
+          })),
+        },
       },
       include: {
         users: true,
         mapLayers: {
           include: {
-            layer: true
-          }
+            layer: true,
+          },
         },
         widgets: {
           include: {
-            widget: true
-          }
+            widget: true,
+          },
         },
-        baseMap: true
-      }
-    })
+        baseMap: true,
+      },
+    });
 
-    response.status(201).json(newMap)
+    response.status(201).json(newMap);
   } catch (error) {
-    console.error('❌ Error creating map:', error)
-    response.status(500).json({ error: 'Failed to create map' })
+    console.error("❌ Error creating map:", error);
+    response.status(500).json({ error: "Failed to create map" });
   }
-}
-
+};
 
 export const deleteMap = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = parseInt(req.params.id)
+    const id = parseInt(req.params.id);
     if (isNaN(id)) {
-      res.status(400).json({ error: "Invalid map id" })
-      return
+      res.status(400).json({ error: "Invalid map id" });
+      return;
     }
 
-    const existingMap = await prisma.map.findUnique({ where: { id } })
+    const existingMap = await prisma.map.findUnique({ where: { id } });
     if (!existingMap) {
-      res.status(404).json({ error: "Map not found" })
-      return
+      res.status(404).json({ error: "Map not found" });
+      return;
     }
 
-    await prisma.map.delete({ where: { id } })
-    res.status(204).send()
+    await prisma.map.delete({ where: { id } });
+    res.status(204).send();
   } catch (error) {
-    console.error("❌ Error deleting map:", error)
-    res.status(500).json({ error: "Failed to delete map" })
+    console.error("❌ Error deleting map:", error);
+    res.status(500).json({ error: "Failed to delete map" });
   }
-}
-
+};
 
 export const updateMap = async (req: Request, res: Response): Promise<void> => {
   try {
-    const id = parseInt(req.params.id)
+    const id = parseInt(req.params.id);
     if (isNaN(id)) {
-      res.status(400).json({ error: "Invalid map id" })
-      return
+      res.status(400).json({ error: "Invalid map id" });
+      return;
     }
 
     const {
@@ -217,13 +307,13 @@ export const updateMap = async (req: Request, res: Response): Promise<void> => {
       baseMapId,
       isPublic,
       layers = [],
-      widgets = []
-    } = req.body
+      widgets = [],
+    } = req.body;
 
-    const existingMap = await prisma.map.findUnique({ where: { id } })
+    const existingMap = await prisma.map.findUnique({ where: { id } });
     if (!existingMap) {
-      res.status(404).json({ error: "Map not found" })
-      return
+      res.status(404).json({ error: "Map not found" });
+      return;
     }
 
     // Actualización principal con eliminación de relaciones previas
@@ -243,31 +333,31 @@ export const updateMap = async (req: Request, res: Response): Promise<void> => {
         mapLayers: {
           deleteMany: {},
           create: layers.map((layer: { id: number }) => ({
-            layer: { connect: { id: layer.id } }
-          }))
+            layer: { connect: { id: layer.id } },
+          })),
         },
         widgets: {
           deleteMany: {},
           create: widgets.map((widget: { id: number }) => ({
-            widget: { connect: { id: widget.id } }
-          }))
-        }
+            widget: { connect: { id: widget.id } },
+          })),
+        },
       },
       include: {
         users: true,
         mapLayers: {
-          include: { layer: true }
+          include: { layer: true },
         },
         widgets: {
-          include: { widget: true }
+          include: { widget: true },
         },
-        baseMap: true
-      }
-    })
+        baseMap: true,
+      },
+    });
 
-    res.status(200).json(updatedMap)
+    res.status(200).json(updatedMap);
   } catch (error) {
-    console.error("❌ Error updating map:", error)
-    res.status(500).json({ error: "Failed to update map" })
+    console.error("❌ Error updating map:", error);
+    res.status(500).json({ error: "Failed to update map" });
   }
-}
+};

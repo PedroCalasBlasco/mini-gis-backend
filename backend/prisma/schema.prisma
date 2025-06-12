@@ -18,7 +18,8 @@ model User {
   color     String?
 
   maps   MapUser[]
-  layers Layer[]   @relation("UserLayers")
+  userLayers UserLayer[]
+  ownedMaps  Map[]     @relation("MapOwner") 
 }
 
 model Map {
@@ -35,6 +36,9 @@ model Map {
   bbox      Json?
   baseMapId Int?
   baseMap   BaseMap? @relation(fields: [baseMapId], references: [id])
+
+  ownerId Int
+  owner   User @relation("MapOwner", fields: [ownerId], references: [id]) 
 
   users     MapUser[]
   mapLayers MapLayer[]
@@ -86,7 +90,7 @@ model Layer {
   id          Int       @id @default(autoincrement())
   name        String
   description String?
-  users       User[]    @relation("UserLayers")
+  userLayers  UserLayer[] 
   features    Feature[]
   geometryType  String?
   sourceUrl     String?
@@ -107,6 +111,15 @@ model Layer {
   @@map("Layer")
 }
 
+model UserLayer {
+  user     User   @relation(fields: [userId], references: [id])
+  userId   Int
+  layer    Layer  @relation(fields: [layerId], references: [id])
+  layerId  Int
+
+  @@id([userId, layerId])
+}
+
 model MapLayer {
   mapId   Int
   layerId Int
@@ -123,6 +136,9 @@ model Feature {
   type     String
   layerId  Int
   geometry Unsupported("geometry")
+  properties Json 
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   layer    Layer                   @relation(fields: [layerId], references: [id])
 
   @@map("Feature")
