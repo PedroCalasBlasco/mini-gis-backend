@@ -62,16 +62,18 @@ export const createFeatures = async (
 ): Promise<void> => {
   const features = req.body;
 
-  if (!Array.isArray(features) || features.length === 0) {
-    res.status(400).json({ error: "Invalid input: expected a non-empty array of features" });
+  if (!Array.isArray(features)) {
+    res.status(400).json({ error: "Invalid input: expected an array of features" });
     return;
   }
 
-  const now = new Date();
-  const layerId = parseInt(features[0].layerId, 10);
+  // ⚠️ Si está vacío, necesitamos al menos el layerId para saber qué borrar
+  const layerId = features.length > 0
+    ? parseInt(features[0].layerId, 10)
+    : parseInt(req.query.layerId as string, 10); // permite mandarlo como query param si se desea
 
   if (isNaN(layerId)) {
-    res.status(400).json({ error: `Invalid layerId: ${features[0].layerId}` });
+    res.status(400).json({ error: "Missing or invalid layerId" });
     return;
   }
 
@@ -85,19 +87,24 @@ export const createFeatures = async (
       return;
     }
 
-    const schema = layer.featureSchema as any;
-
-    // 🔥 1. Eliminar los features existentes del layer
+    // 🔥 Siempre borramos los features anteriores
     await prisma.$executeRawUnsafe(
       `DELETE FROM "Feature" WHERE "layerId" = $1`,
       layerId
     );
 
-    // ✅ 2. Insertar los nuevos features
+    // 🚫 Si el array está vacío, ya hemos terminado
+    if (features.length === 0) {
+      res.status(200).json({ message: "All features deleted successfully" });
+      return;
+    }
+
+    const schema = layer.featureSchema as any;
+    const now = new Date();
+
     for (const feature of features) {
       const { type, geometry, properties } = feature;
 
-      // 🔁 Convertir array a objeto plano para validación y almacenamiento
       const flatProperties = Array.isArray(properties)
         ? properties.reduce((acc, prop) => {
             acc[prop.name] = prop.value;

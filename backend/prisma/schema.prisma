@@ -139,7 +139,7 @@ model Feature {
   properties Json 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  layer    Layer                   @relation(fields: [layerId], references: [id])
+  layer    Layer                   @relation(fields: [layerId], references: [id], onDelete: Cascade)
 
   @@map("Feature")
 }
